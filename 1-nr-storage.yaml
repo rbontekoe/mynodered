@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: nodered
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: microk8s-hostpath
+  namespace: nodered
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: microk8s.io/hostpath
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nr-pv-claim
+  namespace: nodered
+  labels:
+    app: nodered
+spec:
+  storageClassName: microk8s-hostpath
+  capacity:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nr-statefulset
+  namespace: nodered
+  labels:
+    app: nr
+spec:
+  serviceName: "nr"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nr
+  template:
+    metadata:
+      labels:
+        app: nr
+    spec:
+      containers:
+      - name: nr-pod
+        image: nodered/node-red
+        ports:
+        - containerPort: 1880
+        volumeMounts:
+        - name: nr-data
+          mountPath: /data
+      volumes:
+      - name: nr-data
+        persistentVolumeClaim:
+          claimName: nr-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nr-service
+  namespace: nodered
+  labels:
+    app: nr
+spec:
+  ports:
+  - port: 1880
+    nodePort: 31880
+  type: NodePort 
+  selector:
+    app: nr
