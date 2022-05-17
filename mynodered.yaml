@@ -5,15 +5,15 @@ metadata:
     istio-injection: enabled
   name: nodered
 ---
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: microk8s-hostpath
-  namespace: nodered
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: microk8s.io/hostpath
----
+#kind: StorageClass
+#apiVersion: storage.k8s.io/v1
+#metadata:
+#  name: microk8s-hostpath
+#  namespace: nodered
+#  annotations:
+#    storageclass.kubernetes.io/is-default-class: "true"
+#provisioner: microk8s.io/hostpath
+#---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
