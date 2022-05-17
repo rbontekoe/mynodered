@@ -5,49 +5,73 @@ metadata:
     istio-injection: enabled
   name: nodered
 ---
-apiVersion: apps/v1
-kind: Deployment
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
 metadata:
+  name: microk8s-hostpath
+  namespace: nodered
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: microk8s.io/hostpath
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nr-pv-claim
+  namespace: nodered
   labels:
     app: nodered
-  name: nr-deploy
-  namespace: nodered
 spec:
-  replicas: 1
+  storageClassName: microk8s-hostpath
+  capacity:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nr-statefulset
+  namespace: nodered
+  labels:
+    app: nr
+spec:
+  serviceName: "nr"
+  replicas: 2
   selector:
     matchLabels:
-      app: nr-sshd
-  revisionHistoryLimit: 1
-  progressDeadlineSeconds: 300
-  minReadySeconds: 10
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+      app: nr
   template:
     metadata:
       labels:
-        app: nr-sshd
+        app: nr
     spec:
       containers:
       - name: nr-pod
         image: nodered/node-red
         ports:
         - containerPort: 1880
-          name: nr-sshd-http
+        volumeMounts:
+        - name: nr-data
+          mountPath: /data
+      volumes:
+      - name: nr-data
+        persistentVolumeClaim:
+          claimName: nr-pv-claim
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: nr-service
   namespace: nodered
+  labels:
+    app: nr
 spec:
-  type: NodePort
   ports:
-    - name: http
-      port: 1880
-      nodePort: 31880
-      targetPort: nr-sshd-http
+  - port: 1880
+    nodePort: 31880
+  type: NodePort 
   selector:
-    app: nr-sshd
+    app: nr
