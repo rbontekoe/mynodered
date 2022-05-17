@@ -39,7 +39,7 @@ metadata:
     app: nr
 spec:
   serviceName: "nr"
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: nr
